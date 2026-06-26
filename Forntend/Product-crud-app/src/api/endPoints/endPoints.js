@@ -7,6 +7,8 @@ const endPoints = {
   softDeleteProduct: "/soft-delete",
   trashProduct: "/trash",
   restoreProduct: "/restore",
+  register: "/register",
+  login: "login",
 };
 
 export default endPoints;

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import { getProducts } from "../../api/services/product/getProduct";
 import { deleteProduct } from "../../api/services/product/deleteProduct";
@@ -11,6 +12,48 @@ function Product() {
   const [selectedSize, setSelectedSize] = useState([]);
   const [selectedColor, setSelectedColor] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState([]);
+  const [visibleCount, setVisibleCount] = useState(6);
+  const token = localStorage.getItem("token");
+
+  const navigate = useNavigate();
+
+  const checkLogin = () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      Swal.fire({
+        title: " Login Required",
+        html: `
+        <h5 style="color:#dc3545">
+          Please Login or Register First
+        </h5>
+        <p>
+          You must login to access this feature.
+        </p>
+      `,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Login",
+        cancelButtonText: "Register",
+        confirmButtonColor: "#0d6efd",
+        cancelButtonColor: "#198754",
+        background: "#f8f9fa",
+        allowOutsideClick:true,
+       
+      }).then((result) => {
+  if (result.isConfirmed) {
+    navigate("/login");
+  } else if (result.dismiss === Swal.DismissReason.cancel) {
+    navigate("/register");
+  }
+});
+
+      return false;
+    }
+
+    return true;
+  };
+
 
   const fetchProducts = async () => {
     try {
@@ -44,76 +87,107 @@ function Product() {
 
     setSearch("");
   };
-  const handleDelete = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this product?"
-    );
 
-    if (!confirmDelete) {
-      return;
-    }
 
-    try {
-      await deleteProduct(id);
+const handleDelete = async (id) => {
+  const result = await Swal.fire({
+    title: " Delete Product?",
+    text: "This action cannot be undone!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#dc3545",
+    cancelButtonColor: "#6c757d",
+    confirmButtonText: "Yes, Delete",
+    cancelButtonText: "Cancel",
+  });
 
-      alert("Product Deleted Successfully");
+  if (!result.isConfirmed) return;
 
-      fetchProducts();
-    } catch (error) {
-      console.log(error);
-      alert("Something went wrong");
-    }
-  };
- const handleFilter = () => {
-  console.log(selectedSize);
-console.log(selectedColor);
-console.log(selectedBrand);
-  let result = [...products];
+  try {
+    await deleteProduct(id);
 
-  if (selectedSize.length > 0) {
-    result = result.filter((item) =>
-      item.size?.some((s) =>
-        selectedSize.includes(s)
-      )
-    );
+    Swal.fire({
+      icon: "success",
+      title: "Deleted!",
+      text: "Product deleted successfully.",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+
+    fetchProducts();
+  } catch (error) {
+    Swal.fire({
+      icon: "error",
+      title: "Oops!",
+      text: "Something went wrong.",
+    });
   }
-
-  if (selectedColor.length > 0) {
-    result = result.filter((item) =>
-      item.color?.some((c) =>
-        selectedColor.includes(c)
-      )
-    );
-  }
-
-  if (selectedBrand.length > 0) {
-    result = result.filter((item) =>
-      selectedBrand.includes(item.brand)
-    );
-  }
-
-  setFilteredProducts(result);
 };
+  const handleFilter = () => {
+    console.log(selectedSize);
+    console.log(selectedColor);
+    console.log(selectedBrand);
+    let result = [...products];
 
-  const handleSoftDelete = async (id) => {
-    console.log("click", id);
-
-    const confirmDelete = window.confirm(
-      "Move product to trash?"
-    );
-
-    if (!confirmDelete) return;
-
-    try {
-      await softDeleteProduct(id);
-
-      alert("Product moved to trash");
-
-      fetchProducts();
-    } catch (error) {
-      console.log(error);
+    if (selectedSize.length > 0) {
+      result = result.filter((item) =>
+        item.size?.some((s) =>
+          selectedSize.includes(s)
+        )
+      );
     }
+
+    if (selectedColor.length > 0) {
+      result = result.filter((item) =>
+        item.color?.some((c) =>
+          selectedColor.includes(c)
+        )
+      );
+    }
+
+    if (selectedBrand.length > 0) {
+      result = result.filter((item) =>
+        selectedBrand.includes(item.brand)
+      );
+    }
+
+    setFilteredProducts(result);
   };
+
+const handleSoftDelete = async (id) => {
+  const result = await Swal.fire({
+    title: " Move To Trash?",
+    text: "Product will be moved to trash.",
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonColor: "#f39c12",
+    cancelButtonColor: "#6c757d",
+    confirmButtonText: "Move",
+    cancelButtonText: "Cancel",
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    await softDeleteProduct(id);
+
+    Swal.fire({
+      icon: "success",
+      title: "Moved!",
+      text: "Product moved to trash successfully.",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+
+    fetchProducts();
+  } catch (error) {
+    Swal.fire({
+      icon: "error",
+      title: "Oops!",
+      text: "Something went wrong.",
+    });
+  }
+};
   return (
     <div className="container-fluid">
       <div className="row">
@@ -171,28 +245,86 @@ console.log(selectedBrand);
 
               <h3 className="fw-bold">All Products</h3>
 
-              <div className="d-flex gap-2">
-                <Link
-                  to="/add-product"
+              <div className="d-flex gap-2 align-items-center">
+
+                <button
                   className="btn btn-primary"
+                  onClick={() => {
+                    if (checkLogin()) {
+                      navigate("/add-product");
+                    }
+                  }}
                 >
                   Add Product
-                </Link>
+                </button>
 
-                <Link
-                  to="/trash"
+                <button
                   className="btn btn-dark"
+                  onClick={() => {
+                    if (checkLogin()) {
+                      navigate("/trash");
+                    }
+                  }}
                 >
                   Trash
-                </Link>
-              </div>
+                </button>
 
+                <div className="dropdown">
+                  <button
+                    className="btn btn-success dropdown-toggle"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    Account
+                  </button>
+
+                  <ul className="dropdown-menu dropdown-menu-end">
+
+                    {!token ? (
+                      <>
+                        <li>
+                          <Link
+                            className="dropdown-item"
+                            to="/login"
+                          >
+                            Login
+                          </Link>
+                        </li>
+
+                        <li>
+                          <Link
+                            className="dropdown-item"
+                            to="/register"
+                          >
+                            Register
+                          </Link>
+                        </li>
+                      </>
+                    ) : (
+                      <li>
+                        <button
+                          className="dropdown-item text-danger"
+                          onClick={() => {
+                            localStorage.removeItem("token");
+                            window.location.href = "/";
+                          }}
+                        >
+                          Logout
+                        </button>
+                      </li>
+                    )}
+
+                  </ul>
+                </div>
+
+              </div>
             </div>
             <div className="row g-4">
 
               {filteredProducts?.length > 0 ? (
 
-                filteredProducts.map((item) => (
+                filteredProducts.slice(0, visibleCount).map((item) => (
 
                   <div
                     className="col-lg-4 col-md-6 col-sm-12"
@@ -203,8 +335,8 @@ console.log(selectedBrand);
                       <img
                         src={
                           item.image
-                            ? `http://localhost:3005/${item.image}`
-                            : "https://via.placeholder.com/400x250"
+                            ? item.image
+                            : "https://via.placeholder.com/400x200"
                         }
                         alt={item.productName}
                         className="product-img"
@@ -250,29 +382,34 @@ console.log(selectedBrand);
 
                           <div className="d-flex gap-1">
 
-                            <Link
-                              to={`/edit-product/${item._id}`}
+                            <button
                               className="btn btn-success btn-sm flex-fill"
+                              onClick={() => {
+                                if (checkLogin()) {
+                                  navigate(`/edit-product/${item._id}`);
+                                }
+                              }}
                             >
                               Edit
-                            </Link>
+                            </button>
 
                             <button
                               className="btn btn-danger btn-sm flex-fill"
-                              onClick={() =>
+                              onClick={() => {
                                 handleDelete(item._id)
-                              }
+                              }}
                             >
                               Delete
                             </button>
 
                             <button
                               className="btn btn-warning btn-sm flex-fill"
-                              onClick={() =>
-                                handleSoftDelete(item._id)
-                              }
+                              onClick={() => {
+                                handleSoftDelete(item._id);
+
+                              }}
                             >
-                              Soft Delete
+                              Move to Trash
                             </button>
 
                           </div>
@@ -294,7 +431,16 @@ console.log(selectedBrand);
               )}
 
             </div>
-
+            {visibleCount < filteredProducts.length && (
+              <div className="text-center mt-4">
+                <button
+                  className="btn btn-primary px-4"
+                  onClick={() => setVisibleCount(visibleCount + 6)}
+                >
+                  Load More
+                </button>
+              </div>
+            )}
           </div>
 
         </div>

@@ -5,7 +5,7 @@ class ProductController {
 
   async createProduct(req, res) {
     try {
-
+       
       const {
         productName,
         productPrice,
@@ -37,10 +37,14 @@ class ProductController {
       });
 
     } catch (error) {
+       console.log(error.message);
+       console.log(error)
       return res.status(StatusCode.SERVER_ERROR).json({
         status: false,
-        message: "Something went wrong",
-        error
+        message: error.message,
+      
+       
+        
       });
     }
   }

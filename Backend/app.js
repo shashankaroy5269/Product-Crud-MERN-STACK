@@ -5,6 +5,7 @@ const ConnectDB=require('./app/config/db')
 const cors=require('cors')
 const path=require('path')
 ConnectDB();
+
 const app=express();
 
 //cors
@@ -15,8 +16,8 @@ app.set('view engine','ejs');
 app.set('views','views')
 
 //static folder
-app.use(express.static('public'))
-app.use('/uploads',express.static(path.join(__dirname,'uploads')))
+// app.use(express.static('public'))
+// app.use('/uploads',express.static(path.join(__dirname,'uploads')))
 
 
 //middleware
@@ -24,11 +25,16 @@ app.use(express.json());
 //app.use(express.urlencoded({extended:false}))
 
 //define routes
+
 const productRoute=require('./app/routes/api/productroutes')
 app.use('/api',productRoute)
+const authRoute=require('./app/routes/api/authroutes')
+app.use('/api',authRoute)
+
 
 const studentRoutes=require('./app/routes/api/Studentroutes')
 app.use('/api',studentRoutes)
+
 
 
 
